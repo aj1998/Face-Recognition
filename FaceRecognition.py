@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 import sqlite3
 
+(im_width, im_height) = (312, 312)
 
 enroll=raw_input('Check the list of students enrolled Y/N ')
 if(enroll=="Y"):
@@ -48,15 +49,17 @@ if(en=="N"):
     sampleNum=0
     while(True):
         ret, img = cam.read();
-        gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        gray=cv2.cvtColor(img ,cv2.COLOR_BGR2GRAY)
         #gray1=img.convert('L')
         faces = detector.detectMultiScale(gray, 1.3, 5)
         for (x,y,w,h) in faces:
             cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
             #incrementing sample number 
             sampleNum=sampleNum+1
+            face = gray[y:y + h, x:x + w]
+            face_resize = cv2.resize(face, (im_width, im_height))
             #saving the captured face in the dataset folder
-            cv2.imwrite("dataSet/User."+Id1 +'.'+ str(sampleNum) + ".jpg", gray[y:y+h,x:x+w])
+            cv2.imwrite("dataSet/User."+Id1 +'.'+ str(sampleNum) + ".jpg", face_resize)
             cv2.imshow('frame',img)
         #wait for 100 miliseconds 
         if cv2.waitKey(100) & 0xFF == ord('q'):
@@ -98,9 +101,9 @@ recognizer.save('trainner/trainningset.yml')
 
 recognizer = cv2.createLBPHFaceRecognizer()
 recognizer.load('trainner\\trainningset.yml')
-def getProfile(Id):
+def getProfile(Id2):
     conn=sqlite3.connect("FaceBase.db")
-    cmd="SELECT * FROM people WHERE ID="+str(Id)
+    cmd="SELECT * FROM people WHERE ID="+str(Id2)
     cursor=conn.execute(cmd)
     profile=None
     for row in cursor:
@@ -119,9 +122,11 @@ for imagePath in imagePaths:
         color = [255, 0, 0]
         
         imageNp=np.array(pilImage,'uint8')
-        faces=detector.detectMultiScale(imageNp, 1.3, 5)
+        faces=detector.detectMultiScale(imageNp)
         for(x,y,w,h) in faces:
-            Id2, conf = recognizer.predict(imageNp[y:y+h,x:x+w])
+            face = imageNp[y:y + h, x:x + w]
+            face_resize = cv2.resize(face, (im_width, im_height))
+            Id2, conf = recognizer.predict(face_resize)
             dr = ImageDraw.Draw(img1)
             dr.rectangle(((x,y),(x+w,y+h)), fill="black", outline = "blue")
             #print "sbkkjbs"
@@ -130,11 +135,13 @@ for imagePath in imagePaths:
                     n='Brajesh'
             else:
                 n='Unknown'"""
+            print Id1
             print Id2
             print conf
             n='';
+            Id3=int(Id1)
             #if(Id1==Id):
-            if(Id1==Id2):
+            if(Id3==Id2):
                 profile=getProfile(Id2)
                 n= (profile[1])
             else:
